@@ -28,8 +28,6 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
         field = value
     }
 
-    var isDiscoveryFinished = false
-
     @Synchronized fun start(){
         connectionState = ConnectionState.START
         connectThread?.cancel()
@@ -55,17 +53,13 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     @Synchronized fun connected(bluetoothSocket: BluetoothSocket){
-        Log.d("bluetooth", "0")
 
         connectionState = ConnectionState.CONNECTED
         //connectThread?.cancel()
-        connectThread = null
-        Log.d("bluetooth", "1")
+        //connectThread = null
         //acceptThread?.cancel()
         //acceptThread = null
-        Log.d("bluetooth", "2")
 
-        Log.d("bluetooth", "3")
         connectedThread?.cancel()
         connectedThread = null
         connectedThread = ConnectedThread(bluetoothSocket)
