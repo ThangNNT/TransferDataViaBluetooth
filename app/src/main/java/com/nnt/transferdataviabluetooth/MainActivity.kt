@@ -132,8 +132,10 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private fun setupListener(){
         binding.btnSend.setOnClickListener {
             val message = binding.edtMessage.text.toString()
-            binding.edtMessage.setText("")
-            sendMessage(message)
+            if(message.isNotEmpty()){
+                binding.edtMessage.setText("")
+                sendMessage(message)
+            }
         }
     }
 
