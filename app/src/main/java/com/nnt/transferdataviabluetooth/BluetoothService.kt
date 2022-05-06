@@ -20,9 +20,11 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     private var acceptThread: AcceptThread? = null
     private var connectThread: ConnectThread? = null
     private var connectedThread: ConnectedThread? =null
+    private var listener: ConnectionListener? = null
     var connectionState: ConnectionState = ConnectionState.NONE
         private set(value) {
         field = value
+        listener?.onStateChanged(field)
         Log.d(TAG, connectionState.name)
     }
 
@@ -80,6 +82,15 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
         out?.let {
             connectedThread?.write(it)
         }
+    }
+
+    fun setConnectionListener(listener: (state: ConnectionState)-> Unit){
+        this.listener = object: ConnectionListener{
+            override fun onStateChanged(state: ConnectionState) {
+                listener.invoke(state)
+            }
+        }
+        connectionState = connectionState
     }
 
     private inner class AcceptThread : Thread() {
@@ -216,6 +227,10 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                 Log.e(TAG, "Could not close the connect socket", e)
             }
         }
+    }
+
+    interface ConnectionListener{
+        fun onStateChanged(state: ConnectionState)
     }
 
     enum class MessageType{

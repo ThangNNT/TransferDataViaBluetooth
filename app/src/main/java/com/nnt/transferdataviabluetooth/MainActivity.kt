@@ -17,6 +17,7 @@ import android.os.*
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import androidx.core.view.isVisible
 
 
 class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
@@ -45,7 +46,36 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
 
         bluetoothAdapter?.let {
             bluetoothService = BluetoothService(it, handler = mHandler)
+            bluetoothService?.setConnectionListener { state ->
+                when(state){
+                    BluetoothService.ConnectionState.NONE ->{
+                        showNoConnectedDevice()
+                    }
+                    BluetoothService.ConnectionState.CONNECTING ->{
+                        showNoConnectedDevice()
+                    }
+                    BluetoothService.ConnectionState.CONNECTED ->{
+                        showDeviceConnected()
+                    }
+                    else ->{
+                        showNoConnectedDevice()
+                    }
+                }
+            }
             bluetoothService?.start()
+        }
+    }
+
+    private fun showNoConnectedDevice(){
+        runOnUiThread {
+            binding.layoutNoConnectedDevice.isVisible = true
+            binding.layoutSend.isVisible = false
+        }
+    }
+    private fun showDeviceConnected(){
+        runOnUiThread {
+            binding.layoutNoConnectedDevice.isVisible = false
+            binding.layoutSend.isVisible= true
         }
     }
 
