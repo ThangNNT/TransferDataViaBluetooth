@@ -163,7 +163,6 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
                     }
                 }
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                    bluetoothService?.isDiscoveryFinished = true
                 }
             }
         }
