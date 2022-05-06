@@ -21,11 +21,9 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     private var connectThread: ConnectThread? = null
     private var connectedThread: ConnectedThread? =null
     var connectionState: ConnectionState = ConnectionState.NONE
-        get(){
-            return field
-        }
-    private set(value) {
+        private set(value) {
         field = value
+        Log.d(TAG, connectionState.name)
     }
 
     @Synchronized fun start(){
@@ -67,7 +65,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     @Synchronized fun stop(){
-        connectionState = ConnectionState.STOP
+        connectionState = ConnectionState.NONE
         connectThread?.cancel()
         connectThread = null
 
@@ -234,8 +232,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
         NONE,
         START,
         CONNECTING,
-        CONNECTED,
-        STOP
+        CONNECTED
     }
 
     companion object {
