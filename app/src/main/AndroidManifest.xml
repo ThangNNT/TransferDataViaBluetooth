@@ -24,6 +24,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:theme="@style/Theme.TransferDataViaBluetooth">
         <activity android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
