@@ -100,19 +100,19 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
 
         override fun run() {
             // Keep listening until exception occurs or a socket is returned.
-            var shouldLoop = true
-            while (shouldLoop) {
-                val socket: BluetoothSocket? = try {
-                    mmServerSocket?.accept()
-                } catch (e: IOException) {
-                    Log.e(TAG, "Socket's accept() method failed", e)
-                    shouldLoop = false
-                    null
-                }
-                socket?.also {
-                    connected(bluetoothSocket = it )
-                    mmServerSocket?.close()
-                    shouldLoop = false
+            while (true) {
+                if(connectionState!= ConnectionState.CONNECTED){
+                    val socket: BluetoothSocket? = try {
+                        mmServerSocket?.accept()
+                    } catch (e: IOException) {
+                        Log.e(TAG, "Socket's accept() method failed", e)
+                        null
+                    }
+                    connectThread?.cancel()
+                    connectThread = null
+                    socket?.also {
+                        connected(bluetoothSocket = it )
+                    }
                 }
             }
         }
