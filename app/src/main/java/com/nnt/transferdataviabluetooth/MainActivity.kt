@@ -14,7 +14,9 @@ import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import android.bluetooth.BluetoothDevice
 import android.os.*
-
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 
 
 class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
@@ -38,7 +40,6 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
         registerReceiver(discoveryReceiver, filter)
 
-        requestDiscoverableDevice()
         requestNecessaryPermission()
         setupListener()
 
@@ -99,16 +100,6 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     }
 
     private fun setupListener(){
-        binding.btnScan.setOnClickListener {
-            //start discovery
-            if (bluetoothAdapter?.isDiscovering == true){
-                bluetoothAdapter?.cancelDiscovery()
-            }
-            if (bluetoothAdapter?.startDiscovery() == true) {
-                DeviceListDialog.newInstance(ArrayList(devices.values))
-                    .show(supportFragmentManager, " devices")
-            }
-        }
         binding.btnSend.setOnClickListener {
             val message = binding.edtMessage.text.toString()
             binding.edtMessage.setText("")
@@ -173,6 +164,33 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private fun setupListenBluetoothStateChanged(){
         val intentFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         registerReceiver(bluetoothStateChangeReceiver, intentFilter)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle item selection
+        return when (item.itemId) {
+            R.id.scan -> {
+                if (bluetoothAdapter?.isDiscovering == true){
+                    bluetoothAdapter?.cancelDiscovery()
+                }
+                if (bluetoothAdapter?.startDiscovery() == true) {
+                    DeviceListDialog.newInstance(ArrayList(devices.values))
+                        .show(supportFragmentManager, " devices")
+                }
+                true
+            }
+            R.id.make_discoverable -> {
+                requestDiscoverableDevice()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     override fun onDestroy() {
