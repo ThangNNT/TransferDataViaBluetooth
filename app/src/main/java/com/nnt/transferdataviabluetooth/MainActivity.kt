@@ -1,22 +1,20 @@
 package com.nnt.transferdataviabluetooth
 
+import android.Manifest
 import android.bluetooth.*
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Bundle
-import android.util.Log
+import android.content.*
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.nnt.transferdataviabluetooth.databinding.ActivityMainBinding
-import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
+import android.bluetooth.BluetoothDevice
+import android.os.*
+
 
 
 class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
@@ -24,6 +22,7 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private val viewModel: MainViewModel by viewModels()
     private var bluetoothAdapter: BluetoothAdapter? = null
     private val devices = LinkedHashMap<String, BluetoothDevice>()
+    private var bluetoothService: BluetoothService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,26 +31,100 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         bluetoothAdapter= bluetoothManager.adapter
         checkBluetoothStateAndDoAction()
         setupListenBluetoothStateChanged()
+        getPairedDevices()
+
+        //listen for device found
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        registerReceiver(discoveryReceiver, filter)
+
+        requestDiscoverableDevice()
+        requestNecessaryPermission()
+        setupListener()
+
+        bluetoothAdapter?.let {
+            bluetoothService = BluetoothService(it, handler = mHandler)
+            bluetoothService?.start()
+        }
+    }
+
+    private val mHandler: Handler = object : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(msg: Message) {
+            when(msg.what){
+                BluetoothService.MessageType.MESSAGE_TOAST.ordinal -> {
+                    Toast.makeText(this@MainActivity, "toast", Toast.LENGTH_SHORT).show()
+
+                }
+                BluetoothService.MessageType.MESSAGE_READ.ordinal -> {
+                    val readBuf = msg.obj as ByteArray
+                    Toast.makeText(this@MainActivity, String(readBuf), Toast.LENGTH_SHORT).show()
+                }
+                BluetoothService.MessageType.MESSAGE_WRITE.ordinal -> {
+                    val writeBuf = msg.obj as ByteArray
+                    Toast.makeText(this@MainActivity, String(writeBuf), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun sendMessage(message: String){
+        bluetoothService?.write(message.toByteArray())
+    }
+
+    private val registerDiscoverableDevice =  registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
+        //do something
+    }
+    private fun requestDiscoverableDevice(){
+        val discoverableIntent: Intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
+        }
+        registerDiscoverableDevice.launch(discoverableIntent)
+    }
+
+    private fun getPairedDevices(){
         val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
         pairedDevices?.forEach { device ->
             devices[device.address] = device
         }
-        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-        registerReceiver(discoveryReceiver, filter)
+    }
 
-//        val requestCode = 1;
-//        val discoverableIntent: Intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-//            putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
-//        }
-//        startActivityForResult(discoverableIntent, requestCode)
+    private fun requestNecessaryPermission(){
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            PERM_REQUEST_CODE
+        )
+    }
 
-        AcceptThread().start()
+    private fun setupListener(){
         binding.btnScan.setOnClickListener {
             //start discovery
-            if(bluetoothAdapter?.startDiscovery() == true){
-                DeviceListDialog.newInstance(ArrayList(devices.values)).show(supportFragmentManager," devices")
+            if (bluetoothAdapter?.isDiscovering == true){
+                bluetoothAdapter?.cancelDiscovery()
+            }
+            if (bluetoothAdapter?.startDiscovery() == true) {
+                DeviceListDialog.newInstance(ArrayList(devices.values))
+                    .show(supportFragmentManager, " devices")
             }
         }
+        binding.btnSend.setOnClickListener {
+            val message = binding.edtMessage.text.toString()
+            binding.edtMessage.setText("")
+            sendMessage(message)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        if (requestCode == PERM_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//
+//        }
     }
 
     private fun checkBluetoothStateAndDoAction(){
@@ -89,6 +162,9 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
                         viewModel.updateNewDevice(it)
                     }
                 }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    bluetoothService?.isDiscoveryFinished = true
+                }
             }
         }
     }
@@ -100,92 +176,22 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         registerReceiver(bluetoothStateChangeReceiver, intentFilter)
     }
 
-    private fun manageMyConnectedSocket(bluetoothSocket: BluetoothSocket){
-    }
-
-    private inner class AcceptThread : Thread() {
-
-        private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
-            bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(
-                applicationContext.getString(
-                    R.string.app_name
-                ), UUID.fromString(MY_UUID)
-            )
-        }
-
-        override fun run() {
-            // Keep listening until exception occurs or a socket is returned.
-            var shouldLoop = true
-            while (shouldLoop) {
-                val socket: BluetoothSocket? = try {
-                    mmServerSocket?.accept()
-                } catch (e: IOException) {
-                    Log.e(TAG, "Socket's accept() method failed", e)
-                    shouldLoop = false
-                    null
-                }
-                socket?.also {
-                    manageMyConnectedSocket(it)
-                    mmServerSocket?.close()
-                    shouldLoop = false
-                }
-            }
-        }
-
-        // Closes the connect socket and causes the thread to finish.
-        fun cancel() {
-            try {
-                mmServerSocket?.close()
-            } catch (e: IOException) {
-                Log.e(TAG, "Could not close the connect socket", e)
-            }
-        }
-    }
-
-    private inner class ConnectThread(device: BluetoothDevice) : Thread() {
-
-        private val mmSocket: BluetoothSocket? by lazy(LazyThreadSafetyMode.NONE) {
-            device.createRfcommSocketToServiceRecord(UUID.fromString(MY_UUID))
-        }
-
-        public override fun run() {
-            // Cancel discovery because it otherwise slows down the connection.
-            bluetoothAdapter?.cancelDiscovery()
-
-            mmSocket?.let { socket ->
-                // Connect to the remote device through the socket. This call blocks
-                // until it succeeds or throws an exception.
-                socket.connect()
-
-                // The connection attempt succeeded. Perform work associated with
-                // the connection in a separate thread.
-                manageMyConnectedSocket(socket)
-            }
-        }
-
-        // Closes the client socket and causes the thread to finish.
-        fun cancel() {
-            try {
-                mmSocket?.close()
-            } catch (e: IOException) {
-                Log.e(TAG, "Could not close the client socket", e)
-            }
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
+        bluetoothService?.stop()
         unregisterReceiver(bluetoothStateChangeReceiver)
         unregisterReceiver(discoveryReceiver)
     }
 
     companion object {
-        private const val MY_UUID = "1b840124-cb54-11ec-9d64-0242ac120002"
+        private const val PERM_REQUEST_CODE = 1222
         private val TAG = MainActivity::class.java.simpleName
     }
 
     override fun onItemClick(bluetoothDevice: BluetoothDevice) {
-        Log.d("AAAAAAAAAAAAAAAAAAAAA", bluetoothDevice.name)
-        ConnectThread(bluetoothDevice).start()
+        val device = bluetoothAdapter?.getRemoteDevice(bluetoothDevice.address)
+        device?.let {
+            bluetoothService?.connect(device)
+        }
     }
 }
