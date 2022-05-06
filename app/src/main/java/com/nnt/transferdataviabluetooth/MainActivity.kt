@@ -13,7 +13,10 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import android.bluetooth.BluetoothDevice
-import android.os.*
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -26,6 +29,7 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private val devices = LinkedHashMap<String, BluetoothDevice>()
     private var bluetoothService: BluetoothService? = null
+    private var messageAdapter: MessageAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +47,9 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
 
         requestNecessaryPermission()
         setupListener()
+        binding.rvMessages.apply {
+
+        }
 
         bluetoothAdapter?.let {
             bluetoothService = BluetoothService(it, handler = mHandler)
