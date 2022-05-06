@@ -136,9 +136,6 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                             "createRfcommSocket", Int::class.javaPrimitiveType
                         ).invoke(device, 1) as BluetoothSocket
                         socket2.connect()
-                        synchronized(this@BluetoothService){
-                            connectThread = null
-                        }
                         connected(bluetoothSocket = socket2)
                     }
                     catch (ex: Exception){
