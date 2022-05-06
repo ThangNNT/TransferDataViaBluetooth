@@ -185,7 +185,6 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
 
         // Call this from the main activity to send data to the remote device.
         fun write(bytes: ByteArray) {
-            Log.d("bluetooth", "write")
             try {
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
