@@ -13,11 +13,15 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import android.bluetooth.BluetoothDevice
-import android.os.*
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 
 
 class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
@@ -26,6 +30,7 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private val devices = LinkedHashMap<String, BluetoothDevice>()
     private var bluetoothService: BluetoothService? = null
+    private var messageAdapter: MessageAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +48,11 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
 
         requestNecessaryPermission()
         setupListener()
+        binding.rvMessages.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.VERTICAL, false)
+            messageAdapter = MessageAdapter(ArrayList())
+            adapter = messageAdapter
+        }
 
         bluetoothAdapter?.let {
             bluetoothService = BluetoothService(it, handler = mHandler)
@@ -88,11 +98,11 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
                 }
                 BluetoothService.MessageType.MESSAGE_READ.ordinal -> {
                     val readBuf = msg.obj as ByteArray
-                    Toast.makeText(this@MainActivity, String(readBuf), Toast.LENGTH_SHORT).show()
+                    messageAdapter?.appendMessage(Message(String(readBuf), false))
                 }
                 BluetoothService.MessageType.MESSAGE_WRITE.ordinal -> {
                     val writeBuf = msg.obj as ByteArray
-                    Toast.makeText(this@MainActivity, String(writeBuf), Toast.LENGTH_SHORT).show()
+                    messageAdapter?.appendMessage(Message(String(writeBuf), true))
                 }
             }
         }
@@ -179,7 +189,6 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
                     // object and its info from the Intent.
                     val device: BluetoothDevice? =
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                    val deviceName = device?.name
                     device?.let {
                         devices[it.address] = it
                         viewModel.updateNewDevice(it)
