@@ -57,17 +57,23 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         bluetoothAdapter?.let {
             bluetoothService = BluetoothService(it, handler = mHandler)
             bluetoothService?.setConnectionListener { state ->
-                when(state){
-                    BluetoothService.ConnectionState.NONE ->{
+                when (state) {
+                    BluetoothService.ConnectionState.NONE -> {
+                        showNoConnectedDevice()
+                        binding.tvConnectionState.text = getString(R.string.no_connection)
+                    }
+                    BluetoothService.ConnectionState.CONNECTING -> {
+                        messageAdapter?.clearData()
+                        binding.tvConnectionState.text =
+                            getString(R.string.connecting_to, bluetoothService?.currentDevice?.name)
                         showNoConnectedDevice()
                     }
-                    BluetoothService.ConnectionState.CONNECTING ->{
-                        showNoConnectedDevice()
-                    }
-                    BluetoothService.ConnectionState.CONNECTED ->{
+                    BluetoothService.ConnectionState.CONNECTED -> {
+                        binding.tvConnectionState.text =
+                            getString(R.string.connected_to, bluetoothService?.currentDevice?.name)
                         showDeviceConnected()
                     }
-                    else ->{
+                    else -> {
                         showNoConnectedDevice()
                     }
                 }
@@ -92,9 +98,12 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     private val mHandler: Handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when(msg.what){
-                BluetoothService.MessageType.MESSAGE_TOAST.ordinal -> {
-                    Toast.makeText(this@MainActivity, "toast", Toast.LENGTH_SHORT).show()
-
+                BluetoothService.MessageType.CONNECT_FAIL.ordinal -> {
+                    binding.tvConnectionState.text = getString(R.string.connect_fail, bluetoothService?.currentDevice?.name)
+                }
+                BluetoothService.MessageType.CONNECT_LOST.ordinal -> {
+                    binding.tvConnectionState.text = getString(R.string.lost_connection)
+                    messageAdapter?.clearData()
                 }
                 BluetoothService.MessageType.MESSAGE_READ.ordinal -> {
                     val readBuf = msg.obj as ByteArray
@@ -247,9 +256,7 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     }
 
     override fun onItemClick(bluetoothDevice: BluetoothDevice) {
-        val device = bluetoothAdapter?.getRemoteDevice(bluetoothDevice.address)
-        device?.let {
-            bluetoothService?.connect(device)
-        }
+        bluetoothService?.connect(bluetoothDevice)
+
     }
 }

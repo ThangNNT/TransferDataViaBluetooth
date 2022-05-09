@@ -1,5 +1,6 @@
 package com.nnt.transferdataviabluetooth
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -25,5 +26,11 @@ class MessageAdapter(private val messages: ArrayList<Message>): RecyclerView.Ada
     fun appendMessage(message: Message){
         this.messages.add(message)
         notifyItemInserted(messages.size-1)
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun clearData(){
+        this.messages.clear()
+        notifyDataSetChanged()
     }
 }

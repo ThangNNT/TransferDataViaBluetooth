@@ -4,4 +4,9 @@
     <string name="send">Send</string>
     <string name="make_discoverable">Make discoverable</string>
     <string name="connect_notice">Connect to a device to transfer data!</string>
+    <string name="no_connection">No connection!</string>
+    <string name="lost_connection">Connection lost!</string>
+    <string name="connecting_to">Connecting to %1$s</string>
+    <string name="connected_to">Connected to %1$s</string>
+    <string name="connect_fail">Fail to connect %1$s</string>
 </resources>

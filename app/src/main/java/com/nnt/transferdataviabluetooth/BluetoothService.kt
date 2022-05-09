@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
-import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import java.io.IOException
@@ -21,6 +20,14 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     private var connectThread: ConnectThread? = null
     private var connectedThread: ConnectedThread? =null
     private var listener: ConnectionListener? = null
+    var currentDevice: BluetoothDevice? = null
+        get() {
+            if (connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING) {
+                return field
+            }
+            return null
+        }
+    private set
     var connectionState: ConnectionState = ConnectionState.NONE
         private set(value) {
         field = value
@@ -42,24 +49,23 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     @Synchronized fun connect(bluetoothDevice: BluetoothDevice){
+        currentDevice = bluetoothDevice
         connectionState = ConnectionState.CONNECTING
         connectThread?.cancel()
         connectThread = null
         connectedThread?.cancel()
         connectedThread = null
-
         connectThread = ConnectThread(bluetoothDevice)
         connectThread?.start()
     }
 
     @Synchronized fun connected(bluetoothSocket: BluetoothSocket){
-
+        currentDevice = bluetoothSocket.remoteDevice
         connectionState = ConnectionState.CONNECTED
         //connectThread?.cancel()
         //connectThread = null
         //acceptThread?.cancel()
         //acceptThread = null
-
         connectedThread?.cancel()
         connectedThread = null
         connectedThread = ConnectedThread(bluetoothSocket)
@@ -84,10 +90,22 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
         }
     }
 
-    fun setConnectionListener(listener: (state: ConnectionState)-> Unit){
+    fun connectFail(){
+        start()
+        val message = handler.obtainMessage(MessageType.CONNECT_FAIL.ordinal)
+        message.sendToTarget()
+    }
+
+    fun connectLost(){
+        start()
+        val message = handler.obtainMessage(MessageType.CONNECT_LOST.ordinal)
+        message.sendToTarget()
+    }
+
+    fun setConnectionListener(onStateChanged: (state: ConnectionState)-> Unit){
         this.listener = object: ConnectionListener{
             override fun onStateChanged(state: ConnectionState) {
-                listener.invoke(state)
+                onStateChanged.invoke(state)
             }
         }
         connectionState = connectionState
@@ -112,6 +130,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                     connectThread = null
                     socket?.also {
                         connected(bluetoothSocket = it )
+                        mmServerSocket?.close()
                     }
                 }
             }
@@ -150,6 +169,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                         connected(bluetoothSocket = socket2)
                     }
                     catch (ex: Exception){
+                        connectFail()
                         Log.e(TAG, "Exception - fallback:", ex)
                     }
                     Log.e(TAG, "Exception: ", ex)
@@ -182,6 +202,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                 numBytes = try {
                     mmInStream.read(mmBuffer)
                 } catch (e: IOException) {
+                    connectLost()
                     Log.d(TAG, "Input stream was disconnected", e)
                     break
                 }
@@ -200,14 +221,6 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
                 Log.e(TAG, "Error occurred when sending data", e)
-
-                // Send a failure message back to the activity.
-                val writeErrorMsg = handler.obtainMessage(MessageType.MESSAGE_TOAST.ordinal)
-                val bundle = Bundle().apply {
-                    putString("toast", "Couldn't send data to the other device")
-                }
-                writeErrorMsg.data = bundle
-                handler.sendMessage(writeErrorMsg)
                 return
             }
 
@@ -234,7 +247,8 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     enum class MessageType{
-        MESSAGE_TOAST,
+        CONNECT_FAIL,
+        CONNECT_LOST,
         MESSAGE_WRITE,
         MESSAGE_READ
     }
