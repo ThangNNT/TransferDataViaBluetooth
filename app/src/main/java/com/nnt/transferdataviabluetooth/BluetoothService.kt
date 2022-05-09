@@ -191,7 +191,6 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
 
         private val mmInStream: InputStream = mmSocket.inputStream
         private val mmOutStream: OutputStream = mmSocket.outputStream
-        private val mmBuffer: ByteArray = ByteArray(1024) // mmBuffer store for the stream
 
         override fun run() {
             var numBytes: Int // bytes returned from read()
@@ -199,6 +198,7 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 // Read from the InputStream.
+                val mmBuffer = ByteArray(1024) // mmBuffer store for the stream
                 numBytes = try {
                     mmInStream.read(mmBuffer)
                 } catch (e: IOException) {
