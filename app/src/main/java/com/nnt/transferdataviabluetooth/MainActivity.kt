@@ -57,24 +57,26 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         bluetoothAdapter?.let {
             bluetoothService = BluetoothService(it, handler = mHandler)
             bluetoothService?.setConnectionListener { state ->
-                when (state) {
-                    BluetoothService.ConnectionState.NONE -> {
-                        showNoConnectedDevice()
-                        binding.tvConnectionState.text = getString(R.string.no_connection)
-                    }
-                    BluetoothService.ConnectionState.CONNECTING -> {
-                        messageAdapter?.clearData()
-                        binding.tvConnectionState.text =
-                            getString(R.string.connecting_to, bluetoothService?.currentDevice?.name)
-                        showNoConnectedDevice()
-                    }
-                    BluetoothService.ConnectionState.CONNECTED -> {
-                        binding.tvConnectionState.text =
-                            getString(R.string.connected_to, bluetoothService?.currentDevice?.name)
-                        showDeviceConnected()
-                    }
-                    else -> {
-                        showNoConnectedDevice()
+                runOnUiThread {
+                    when (state) {
+                        BluetoothService.ConnectionState.NONE -> {
+                            showNoConnectedDevice()
+                            binding.tvConnectionState.text = getString(R.string.no_connection)
+                        }
+                        BluetoothService.ConnectionState.CONNECTING -> {
+                            messageAdapter?.clearData()
+                            binding.tvConnectionState.text =
+                                getString(R.string.connecting_to, bluetoothService?.currentDevice?.name)
+                            showNoConnectedDevice()
+                        }
+                        BluetoothService.ConnectionState.CONNECTED -> {
+                            binding.tvConnectionState.text =
+                                getString(R.string.connected_to, bluetoothService?.currentDevice?.name)
+                            showDeviceConnected()
+                        }
+                        else -> {
+                            showNoConnectedDevice()
+                        }
                     }
                 }
             }
