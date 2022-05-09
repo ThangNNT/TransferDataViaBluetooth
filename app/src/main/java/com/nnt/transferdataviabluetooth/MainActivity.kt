@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
         override fun handleMessage(msg: Message) {
             when(msg.what){
                 BluetoothService.MessageType.CONNECT_FAIL.ordinal -> {
-                    binding.tvConnectionState.text = getString(R.string.connect_fail, bluetoothService?.currentDevice?.name)
+                    binding.tvConnectionState.text = getString(R.string.connect_fail)
                 }
                 BluetoothService.MessageType.CONNECT_LOST.ordinal -> {
                     binding.tvConnectionState.text = getString(R.string.lost_connection)

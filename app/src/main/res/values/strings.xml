@@ -8,5 +8,5 @@
     <string name="lost_connection">Connection lost!</string>
     <string name="connecting_to">Connecting to %1$s</string>
     <string name="connected_to">Connected to %1$s</string>
-    <string name="connect_fail">Fail to connect %1$s</string>
+    <string name="connect_fail">Fail to connect</string>
 </resources>
