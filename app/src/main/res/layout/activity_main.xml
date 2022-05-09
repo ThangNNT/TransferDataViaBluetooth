@@ -41,6 +41,7 @@
                 android:background="@drawable/bg_send_input"
                 android:paddingHorizontal="18dp"
                 android:paddingVertical="10dp"
+                android:hint="@string/send_message_placeholder"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/btn_send"

@@ -12,4 +12,5 @@
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="confirm_new_connection_message">Your device connected to %1$s!. Press confirm to start new connection!</string>
+    <string name="send_message_placeholder">Send a message</string>
 </resources>
