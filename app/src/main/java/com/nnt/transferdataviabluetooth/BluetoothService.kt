@@ -27,7 +27,12 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
             }
             return null
         }
-    private set
+    private set(value) {
+        field = value
+        if(connectionState == ConnectionState.NONE){
+            start()
+        }
+    }
     var connectionState: ConnectionState = ConnectionState.NONE
         private set(value) {
         field = value
@@ -91,13 +96,13 @@ class BluetoothService(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     fun connectFail(){
-        start()
+        connectionState = ConnectionState.NONE
         val message = handler.obtainMessage(MessageType.CONNECT_FAIL.ordinal)
         message.sendToTarget()
     }
 
     fun connectLost(){
-        start()
+        connectionState = ConnectionState.NONE
         val message = handler.obtainMessage(MessageType.CONNECT_LOST.ordinal)
         message.sendToTarget()
     }
