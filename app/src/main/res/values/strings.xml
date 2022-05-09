@@ -9,4 +9,7 @@
     <string name="connecting_to">Connecting to %1$s</string>
     <string name="connected_to">Connected to %1$s</string>
     <string name="connect_fail">Fail to connect</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm_new_connection_message">Your device connected to %1$s!. Press confirm to start new connection!</string>
 </resources>

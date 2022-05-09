@@ -20,8 +20,12 @@ import android.os.Message
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
@@ -85,16 +89,12 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     }
 
     private fun showNoConnectedDevice(){
-        runOnUiThread {
             binding.layoutNoConnectedDevice.isVisible = true
             binding.layoutSend.isVisible = false
-        }
     }
     private fun showDeviceConnected(){
-        runOnUiThread {
             binding.layoutNoConnectedDevice.isVisible = false
             binding.layoutSend.isVisible= true
-        }
     }
 
     private val mHandler: Handler = object : Handler(Looper.getMainLooper()) {
@@ -258,7 +258,30 @@ class MainActivity : AppCompatActivity(), DeviceListDialog.Listener {
     }
 
     override fun onItemClick(bluetoothDevice: BluetoothDevice) {
-        bluetoothService?.connect(bluetoothDevice)
-
+        if(bluetoothService?.connectionState == BluetoothService.ConnectionState.CONNECTED && bluetoothDevice.address == bluetoothService?.currentDevice?.address){
+            AlertDialog.Builder(this)
+                .setMessage(getString(R.string.connected_to, bluetoothService?.currentDevice?.name))
+                .setPositiveButton(getString(R.string.confirm)) { _, _ ->
+                }
+                .show()
+        }
+        else if(bluetoothService?.connectionState == BluetoothService.ConnectionState.CONNECTED){
+            AlertDialog.Builder(this)
+                .setMessage(getString(R.string.confirm_new_connection_message, bluetoothService?.currentDevice?.name))
+                .setNegativeButton(getString(R.string.cancel)) { _, _ ->
+                }
+                .setPositiveButton(getString(R.string.confirm)) { _, _ ->
+                    bluetoothService?.stop()
+                    bluetoothService?.start()
+                    viewModel.viewModelScope.launch {
+                        delay(2000)
+                        bluetoothService?.connect(bluetoothDevice)
+                    }
+                }
+                .show()
+        }
+        else {
+            bluetoothService?.connect(bluetoothDevice)
+        }
     }
 }
